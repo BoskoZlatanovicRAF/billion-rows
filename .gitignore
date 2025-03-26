@@ -29,6 +29,8 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+*.iml
+
 test_data/*
 test_wait/*
 !test_data/.gitkeep
