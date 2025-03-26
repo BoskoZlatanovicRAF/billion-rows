@@ -31,5 +31,7 @@ bin/
 
 test_data/*
 test_wait/*
+!test_data/.gitkeep
+!test_wait/.gitkeep
 *.csv
 *.txt
