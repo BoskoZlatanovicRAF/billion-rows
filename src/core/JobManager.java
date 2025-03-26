@@ -7,6 +7,10 @@ import map.InMemoryMapManager;
 import util.MapExporter;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -170,5 +174,41 @@ public class JobManager {
         for (ScanCommand cmd : commands) {
             handleScan(cmd);
         }
+    }
+
+    public void onDirectoryChanged() {
+        // Resetuj in-memory mapu
+        mapManager.reset();
+
+        // Sačuvaj trenutne poslove
+        List<ScanCommand> activeScans = new ArrayList<>();
+        for (Map.Entry<String, ScanCommand> entry : scanCommandRegistry.entrySet()) {
+            activeScans.add(entry.getValue());
+        }
+
+        // Otkaži sve trenutne poslove
+        for (Map.Entry<String, Future<?>> entry : jobFutures.entrySet()) {
+            entry.getValue().cancel(true);
+        }
+
+        // Čišćenje postojećih struktura
+        jobFutures.clear();
+        jobStatus.clear();
+        scanCommandRegistry.clear(); // Važno - očisti registar
+
+        // Resetuj izlazne fajlove za SCAN poslove
+        for (ScanCommand cmd : activeScans) {
+            try {
+                // Obriši sadržaj output fajla
+                new FileWriter(cmd.getOutputFile(), false).close();
+            } catch (IOException e) {
+                System.out.println("Failed to reset output file: " + cmd.getOutputFile());
+            }
+
+            // Ponovo pokreni SCAN posao
+            handleScan(cmd);
+        }
+
+        System.out.println("Directory changed, reset in-memory map and restarted " + activeScans.size() + " active SCAN jobs");
     }
 }

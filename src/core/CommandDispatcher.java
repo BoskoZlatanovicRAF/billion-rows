@@ -71,7 +71,7 @@ public class CommandDispatcher extends Thread {
                 System.out.println("Error while processing command: " + e.getMessage());
             }
         }
-
+        Thread.currentThread().interrupt();
         System.out.println("Command dispatcher stopped.");
     }
 
@@ -128,12 +128,15 @@ public class CommandDispatcher extends Thread {
 
         systemStarted = false;
         // Dodaj poison pill u red komandi
+
         try {
+            System.out.println("Usao u shutdownSystem za pp");
             commandQueue.put(POISON_PILL);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
+        System.out.println("prekidam cli");
         // Prekini CLI nit
         cliThread.shutdown();
 

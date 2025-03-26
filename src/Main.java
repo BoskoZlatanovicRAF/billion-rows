@@ -26,7 +26,7 @@ public class Main {
         CommandDispatcher dispatcher = new CommandDispatcher(commandQueue, jobManager, cliThread, periodicReporter);
 
         BlockingQueue<File> updateQueue = new LinkedBlockingQueue<>();
-        DirectoryMonitor directoryMonitor = new DirectoryMonitor("test_data", updateQueue);
+        DirectoryMonitor directoryMonitor = new DirectoryMonitor("test_data", updateQueue, jobManager);
         FileUpdateProcessor updateProcessor = new FileUpdateProcessor(updateQueue, mapManager);
 
         // Dodaj komponente dispatcheru da može upravljati njihovim životnim ciklusom

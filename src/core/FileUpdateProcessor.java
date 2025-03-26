@@ -50,11 +50,11 @@ public class FileUpdateProcessor extends Thread {
                 System.out.println("Failed to process updated file: " + e.getMessage());
             }
         }
-
-        System.out.println("FileUpdateProcessor stopped.");
+        Thread.currentThread().interrupt();
+        System.out.println("[FILE-PROCESSOR-THREAD]: FileUpdateProcessor stopped.");
     }
 
-    private void processFile(File file) {
+    public void processFile(File file) {
         boolean isCsv = file.getName().endsWith(".csv");
 
         ReentrantReadWriteLock lock = getFileLock(file.getAbsolutePath());
