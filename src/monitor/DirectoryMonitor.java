@@ -8,6 +8,7 @@ public class DirectoryMonitor extends Thread {
     private final File directory;
     private final BlockingQueue<File> updateQueue;
     private final Map<String, Long> fileTimestamps = new HashMap<>();
+    private final Set<String> currentFiles = new HashSet<>();
 
     private volatile boolean running = true;
 
@@ -20,6 +21,7 @@ public class DirectoryMonitor extends Thread {
     public void shutdown() {
         running = false;
         this.interrupt();
+        System.out.println("[MONITOR-THREAD]: Monitor thread stopping...");
     }
 
     @Override
@@ -31,23 +33,43 @@ public class DirectoryMonitor extends Thread {
                 File[] files = directory.listFiles((dir, name) ->
                         name.endsWith(".txt") || name.endsWith(".csv"));
 
+                // Čisti set trenutnih fajlova za ovu iteraciju
+                currentFiles.clear();
+
                 if (files != null) {
                     for (File file : files) {
-                        long lastModified = file.lastModified();
                         String name = file.getName();
+                        long lastModified = file.lastModified();
 
+                        // Dodaj u set trenutnih fajlova
+                        currentFiles.add(name);
+
+                        // Detektuj nove ili promenjene fajlove
                         if (!fileTimestamps.containsKey(name) || fileTimestamps.get(name) != lastModified) {
                             fileTimestamps.put(name, lastModified);
                             System.out.println("Detected update: " + name);
                             updateQueue.put(file);
                         }
                     }
+
+                    // Proveri ima li uklonjenih fajlova
+                    Set<String> removed = new HashSet<>(fileTimestamps.keySet());
+                    removed.removeAll(currentFiles);
+
+                    // Ukloni iz fileTimestamps one koji više ne postoje
+                    for (String removedFile : removed) {
+                        System.out.println("File removed: " + removedFile);
+                        fileTimestamps.remove(removedFile);
+                    }
                 }
 
                 Thread.sleep(5000);
 
             } catch (InterruptedException e) {
-                if (!running) break;
+                if (!running) {
+                    System.out.println("[MONITOR-THREAD]: Monitor thread stopped. (sleep interrupted)");
+                    break;
+                }
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
                 System.out.println("Directory monitor error: " + e.getMessage());

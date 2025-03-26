@@ -14,7 +14,8 @@ public class PeriodicReporter extends Thread {
 
     public void shutdown() {
         running = false;
-        this.interrupt(); // prekini spavanje ako čeka
+        this.interrupt();
+        System.out.println("[PERIODIC-THREAD]: Periodic reporter thread stopping...");
     }
 
     @Override
@@ -28,7 +29,10 @@ public class PeriodicReporter extends Thread {
                 }
 
             } catch (InterruptedException e) {
-                if (!running) break; // očekivano gašenje
+                if (!running) {
+                    System.out.println("[PERIODIC-THREAD]: Periodic thread stopped. (sleep interrupted)");
+                    break;
+                }
                 System.out.println("PeriodicReporter interrupted unexpectedly.");
                 Thread.currentThread().interrupt();
             } catch (Exception e) {

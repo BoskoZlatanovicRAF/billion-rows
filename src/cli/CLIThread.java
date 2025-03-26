@@ -25,19 +25,21 @@ public class CLIThread extends Thread {
             String line = scanner.nextLine();
             Optional<Command> command = CommandParser.parse(line);
             command.ifPresent(cmd -> {
-                if (!(cmd instanceof StartCommand || cmd instanceof ShutdownCommand)) {
                     try {
                         commandQueue.put(cmd);
                     } catch (InterruptedException e) {
                         System.out.println("Aborted waiting for command line.");
                         Thread.currentThread().interrupt();
                     }
-                }
+
             });
         }
+        System.out.println("[CLI-THREAD]: CLI thread stopped.");
+
     }
 
     public void shutdown() {
         running = false;
+        System.out.println("[CLI-THREAD]: CLI thread stopping...");
     }
 }

@@ -17,57 +17,68 @@ public class ScanJobProcessor {
             return;
         }
 
+        ReentrantReadWriteLock fileLock = FileUpdateProcessor.getFileLock(file.getAbsolutePath());
+        System.out.println("[SCAN-" + command.getJobName() + "] Acquiring READ lock for file: " + file.getName());
+        fileLock.readLock().lock();
+        try {
+            System.out.println("[SCAN-" + command.getJobName() + "] READ lock acquired for file: " + file.getName());
 
-        boolean isCsv = file.getName().endsWith(".csv");
+            boolean isCsv = file.getName().endsWith(".csv");
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                new FileInputStream(file), StandardCharsets.UTF_8))) {
+            // Uzmi lock za izlazni fajl na početku obrade ulaznog fajla
+            ReentrantReadWriteLock outputLock = outputLocks.computeIfAbsent(outputFile, key -> new ReentrantReadWriteLock());
+            outputLock.writeLock().lock();
 
-            String line;
-            boolean skipFirst = isCsv;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                 BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile, true))) {
 
-            StringBuilder matchingLines = new StringBuilder();
+                String line;
+                boolean skipFirst = isCsv;
+                int matchCount = 0;
 
-            while ((line = reader.readLine()) != null) {
-                if (skipFirst) {
-                    skipFirst = false;
-                    continue;
-                }
-
-                String[] parts = line.split(";");
-                if (parts.length != 2) continue;
-
-                String station = parts[0].trim();
-                double temp;
-                try {
-                    temp = Double.parseDouble(parts[1].trim());
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-
-                if (Character.toLowerCase(station.charAt(0)) != Character.toLowerCase(command.getLetter()))
-                    continue;
-
-                if (temp >= command.getMinTemp() && temp <= command.getMaxTemp()) {
-                    matchingLines.append(line).append(System.lineSeparator());
-                }
-            }
-
-            if (matchingLines.length() > 0) {
-                ReentrantReadWriteLock lock = outputLocks.computeIfAbsent(outputFile, key -> new ReentrantReadWriteLock());
-                lock.writeLock().lock();
-                try {
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile, true))) {
-                        writer.write(matchingLines.toString());
+                while ((line = reader.readLine()) != null) {
+                    if (skipFirst) {
+                        skipFirst = false;
+                        continue;
                     }
-                } finally {
-                    lock.writeLock().unlock();
+
+                    String[] parts = line.split(";");
+                    if (parts.length != 2) continue;
+
+                    String station = parts[0].trim();
+                    double temp;
+                    try {
+                        temp = Double.parseDouble(parts[1].trim());
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+
+                    if (Character.toLowerCase(station.charAt(0)) != Character.toLowerCase(command.getLetter()))
+                        continue;
+
+                    if (temp >= command.getMinTemp() && temp <= command.getMaxTemp()) {
+                        // Direktno upiši u fajl umesto akumuliranja u memoriji
+                        writer.write(line);
+                        writer.newLine();
+                        matchCount++;
+                    }
                 }
+
+                System.out.println("[SCAN-" + command.getJobName() + "] Wrote " + matchCount +
+                        " matching records from " + file.getName() + " to " + outputFile);
+
+            } catch (IOException e) {
+                System.out.println("Failed to process file " + file.getName() + ": " + e.getMessage());
+            } finally {
+                // Oslobodi lock za izlazni fajl
+                outputLock.writeLock().unlock();
             }
 
+            System.out.println("[SCAN-" + command.getJobName() + "] Processing file: " + file.getName() + " completed.");
 
-        } catch (IOException e) {
-            System.out.println("Failed to process file " + file.getName() + ": " + e.getMessage());
+        } finally {
+            System.out.println("[SCAN-" + command.getJobName() + "] Releasing READ lock for file: " + file.getName());
+            fileLock.readLock().unlock();
         }
     }
 }

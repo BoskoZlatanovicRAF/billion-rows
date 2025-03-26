@@ -135,21 +135,34 @@ public class JobManager {
         });
     }
 
+    public void savePendingJobs() {
+        JobSaver.savePendingJobs(jobFutures, scanCommandRegistry);
+    }
+
     public void shutdown(boolean saveJobs) {
         if (saveJobs) {
-            JobSaver.savePendingJobs(jobFutures, scanCommandRegistry);
+            savePendingJobs();
         }
 
         executor.shutdownNow();
+        lightExecutor.shutdown();
+
         try {
             if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                System.out.println("Forced shutdown, some tasks did not terminate.");
+                System.out.println("[JOB-MANAGER]: Forced shutdown of executor, some tasks may not complete.");
+                executor.shutdownNow();
+            }
+            if (!lightExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                System.out.println("[JOB-MANAGER]: Forced shutdown of light executor.");
+                lightExecutor.shutdownNow();
             }
         } catch (InterruptedException e) {
+            executor.shutdownNow();
+            lightExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
 
-        System.out.println("Executor shut down.");
+        System.out.println("[JOB-MANAGER]: All executors shut down.");
     }
 
     public void loadPendingJobs() {

@@ -11,8 +11,16 @@ public class CommandParser {
             String cmd = tokens[0].toUpperCase();
 
             Map<String, String> args = new HashMap<>();
-            for (int i = 1; i < tokens.length - 1; i += 2) {
-                args.put(tokens[i], tokens[i + 1]);
+            for (int i = 1; i < tokens.length; i++) {
+                if (tokens[i].startsWith("-")) {
+                    String key = tokens[i];
+                    if (i + 1 < tokens.length && (tokens[i + 1].matches("-?\\d+(\\.\\d+)?") || !tokens[i + 1].startsWith("-"))) {
+                        args.put(key, tokens[i + 1]);
+                        i++;
+                    } else {
+                        args.put(key, "true"); // flag bez vrednosti
+                    }
+                }
             }
 
             switch (cmd) {
@@ -35,6 +43,10 @@ public class CommandParser {
                     return Optional.of(new ScanCommand(min, max, letter, output, job));
                 case "STATUS":
                     String jobName = args.getOrDefault("-j", args.get("--job"));
+                    if (jobName == null) {
+                        System.out.println("Invalid STATUS command: missing job name.");
+                        return Optional.empty();
+                    }
                     return Optional.of(new StatusCommand(jobName));
                 case "MAP":
                     return Optional.of(new MapCommand());
@@ -55,4 +67,3 @@ public class CommandParser {
         return Optional.empty();
     }
 }
-

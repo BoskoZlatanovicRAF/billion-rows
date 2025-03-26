@@ -19,29 +19,23 @@ public class Main {
         // Red komandi između CLI niti i CommandDispatcher-a
         BlockingQueue<Command> commandQueue = new LinkedBlockingQueue<>();
 
+        // Inicijalizacija komponenti sistema (bez startovanja)
         CLIThread cliThread = new CLIThread(commandQueue);
         PeriodicReporter periodicReporter = new PeriodicReporter(mapManager);
-
-        // Job manager (obrada SCAN, STATUS, itd.)
         JobManager jobManager = new JobManager(mapManager);
-
-        // Command dispatcher – veza između CLI i logike
-        CommandDispatcher dispatcher = new CommandDispatcher(commandQueue, jobManager, cliThread);
+        CommandDispatcher dispatcher = new CommandDispatcher(commandQueue, jobManager, cliThread, periodicReporter);
 
         BlockingQueue<File> updateQueue = new LinkedBlockingQueue<>();
         DirectoryMonitor directoryMonitor = new DirectoryMonitor("test_data", updateQueue);
         FileUpdateProcessor updateProcessor = new FileUpdateProcessor(updateQueue, mapManager);
 
-        directoryMonitor.start();
-        updateProcessor.start();
+        // Dodaj komponente dispatcheru da može upravljati njihovim životnim ciklusom
+        dispatcher.setComponents(directoryMonitor, updateProcessor, periodicReporter);
+
+        // Samo pokrećemo CLI nit i dispatcher da bi korisnik mogao da unosi komande
         cliThread.start();
         dispatcher.start();
-        periodicReporter.start();
 
-        if (args.length > 0 && args[0].equalsIgnoreCase("--load-jobs")) {
-            jobManager.loadPendingJobs();
-        }
-
-        System.out.println("System initialized.");
+        System.out.println("System initialized. Enter START to begin processing.");
     }
 }
