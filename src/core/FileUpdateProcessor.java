@@ -54,7 +54,7 @@ public class FileUpdateProcessor extends Thread {
         System.out.println("[FILE-PROCESSOR-THREAD]: FileUpdateProcessor stopped.");
     }
 
-    public void processFile(File file) {
+    private void processFile(File file) {
         boolean isCsv = file.getName().endsWith(".csv");
 
         ReentrantReadWriteLock lock = getFileLock(file.getAbsolutePath());
@@ -70,7 +70,7 @@ public class FileUpdateProcessor extends Thread {
 
                 while ((line = reader.readLine()) != null && running) {
                     if (Thread.currentThread().isInterrupted()) {
-                        System.out.println("[JOB-PROCESSOR]: Thread interrupted while processing file: " + file.getName());
+                        System.out.println("[UPDATE] Thread interrupted while processing file: " + file.getName());
                         throw new InterruptedException("Processing interrupted");
                     }
 
@@ -94,13 +94,12 @@ public class FileUpdateProcessor extends Thread {
                     mapManager.update(station, temp);
                 }
 
-                // Premesti print OVDE, nakon što je završena cela obrada fajla
                 System.out.println("[UPDATE] Processing file: " + file.getName() + " completed.");
-
             } catch (IOException e) {
                 System.out.println("Error reading file " + file.getName() + ": " + e.getMessage());
             }
         } catch (InterruptedException e) {
+            System.out.println("[UPDATE] Process interrupted for file: " + file.getName());
             Thread.currentThread().interrupt();
         } finally {
             System.out.println("[UPDATE] Releasing WRITE lock for file: " + file.getName());

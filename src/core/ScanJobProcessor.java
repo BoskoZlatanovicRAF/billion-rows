@@ -25,7 +25,7 @@ public class ScanJobProcessor {
 
             boolean isCsv = file.getName().endsWith(".csv");
 
-            // Uzmi lock za izlazni fajl na početku obrade ulaznog fajla
+            // Uzmi lock za izlazni fajl na poctku obrade ulaznog fajla
             ReentrantReadWriteLock outputLock = outputLocks.computeIfAbsent(outputFile, key -> new ReentrantReadWriteLock());
             outputLock.writeLock().lock();
 
@@ -37,6 +37,11 @@ public class ScanJobProcessor {
                 int matchCount = 0;
 
                 while ((line = reader.readLine()) != null) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        System.out.println("[SCAN-" + command.getJobName() + "] Thread interrupted, stopping gracefully.");
+                        break;
+                    }
+
                     if (skipFirst) {
                         skipFirst = false;
                         continue;
@@ -57,7 +62,7 @@ public class ScanJobProcessor {
                         continue;
 
                     if (temp >= command.getMinTemp() && temp <= command.getMaxTemp()) {
-                        // Direktno upiši u fajl umesto akumuliranja u memoriji
+                        // Direktno upisi u fajl umesto stringBuilder u memoriji da kesira
                         writer.write(line);
                         writer.newLine();
                         matchCount++;

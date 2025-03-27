@@ -30,7 +30,7 @@ public class CLIThread extends Thread {
                 }
 
                 String line = reader.readLine();
-                if (line == null) continue; // mozda EOF
+                if (line == null) continue;
 
                 Optional<Command> command = CommandParser.parse(line);
                 command.ifPresent(cmd -> {

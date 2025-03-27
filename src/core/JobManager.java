@@ -9,8 +9,6 @@ import util.MapExporter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -148,19 +146,33 @@ public class JobManager {
             savePendingJobs();
         }
 
+        for (Future<?> future : jobFutures.values()) {
+            future.cancel(true);
+        }
+
+        jobFutures.clear();
+        jobStatus.clear();
+        scanCommandRegistry.clear();
+
+
         executor.shutdownNow();
         lightExecutor.shutdown();
 
         try {
-            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                System.out.println("[JOB-MANAGER]: Forced shutdown of executor, some tasks may not complete.");
+            // Čekajte najviše 3 sekunde da se završe svi zadaci
+            if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
+                System.out.println("[JOB-MANAGER]: Elegantno gašenje nije uspelo, prekidam sve zadatke.");
+                // Ako nije uspelo, prekinite izvršavanje
                 executor.shutdownNow();
-            }
-            if (!lightExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                System.out.println("[JOB-MANAGER]: Forced shutdown of light executor.");
                 lightExecutor.shutdownNow();
+
+                // Čekajte još malo da se prekinu
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    System.out.println("[JOB-MANAGER]: Neki zadaci nisu mogli biti prekinuti.");
+                }
             }
         } catch (InterruptedException e) {
+            // Prekinite ako je thread interrupted
             executor.shutdownNow();
             lightExecutor.shutdownNow();
             Thread.currentThread().interrupt();
@@ -180,26 +192,26 @@ public class JobManager {
         // Resetuj in-memory mapu
         mapManager.reset();
 
-        // Sačuvaj trenutne poslove
+        // Sacuvaj trenutne poslove
         List<ScanCommand> activeScans = new ArrayList<>();
         for (Map.Entry<String, ScanCommand> entry : scanCommandRegistry.entrySet()) {
             activeScans.add(entry.getValue());
         }
 
-        // Otkaži sve trenutne poslove
+        // Otkazi sve trenutne poslove
         for (Map.Entry<String, Future<?>> entry : jobFutures.entrySet()) {
             entry.getValue().cancel(true);
         }
 
-        // Čišćenje postojećih struktura
+        // Ciscenje postojecih struktura
         jobFutures.clear();
         jobStatus.clear();
-        scanCommandRegistry.clear(); // Važno - očisti registar
+        scanCommandRegistry.clear();
 
         // Resetuj izlazne fajlove za SCAN poslove
         for (ScanCommand cmd : activeScans) {
             try {
-                // Obriši sadržaj output fajla
+                // Obrisi sadrzaj output fajla
                 new FileWriter(cmd.getOutputFile(), false).close();
             } catch (IOException e) {
                 System.out.println("Failed to reset output file: " + cmd.getOutputFile());

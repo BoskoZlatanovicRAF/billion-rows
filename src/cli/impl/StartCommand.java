@@ -15,6 +15,6 @@ public class StartCommand implements Command {
 
     @Override
     public String getJobName() {
-        return null; // not tied to job
+        return null;
     }
 }

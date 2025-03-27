@@ -59,14 +59,17 @@ public class CommandDispatcher extends Thread {
                     StartCommand startCommand = (StartCommand) command;
                     startSystem(startCommand.shouldLoadJobs());
 
-                } else if (command == POISON_PILL) {
+                } else if (command instanceof PoisonPillCommand) {
+                    System.out.println("Received poison pill, stopping command dispatcher");
                     break;
                 }
 
             } catch (InterruptedException e) {
+                if (!running) {
+                    break;  // Izlazi iz petlje ako je running=false
+                }
                 System.out.println("Command dispatcher interrupted.");
                 Thread.currentThread().interrupt();
-                break;
             } catch (Exception e) {
                 System.out.println("Error while processing command: " + e.getMessage());
             }
@@ -88,7 +91,6 @@ public class CommandDispatcher extends Thread {
             jobManager.loadPendingJobs();
         }
 
-        // Eksplicitno naglasi pokretanje svake komponente
         System.out.println("Starting directory monitor...");
         directoryMonitor.start();
 
@@ -117,17 +119,16 @@ public class CommandDispatcher extends Thread {
             jobManager.savePendingJobs();
         }
 
-        // Prekini sve niti
+        // Prekinute sve niti
         directoryMonitor.shutdown();
         fileUpdateProcessor.shutdown();
         periodicReporter.shutdown();
 
-        // Zaustavi JobManager i njegov executor service
         jobManager.shutdown(saveJobs);
 
+        cliThread.shutdown();
 
         systemStarted = false;
-        // Dodaj poison pill u red komandi
 
         try {
             System.out.println("Usao u shutdownSystem za pp");
@@ -138,9 +139,9 @@ public class CommandDispatcher extends Thread {
 
         System.out.println("prekidam cli");
         // Prekini CLI nit
-        cliThread.shutdown();
 
-        // Završi trenutnu nit
+
+        // Zavrxi trenutnu nit
         this.running = false;
 
         System.out.println("System shutdown completed.");

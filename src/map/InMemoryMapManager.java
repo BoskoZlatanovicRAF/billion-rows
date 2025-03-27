@@ -24,7 +24,7 @@ public class InMemoryMapManager {
     public Map<Character, StationData> snapshot() {
         lock.readLock().lock();
         try {
-            return new TreeMap<>(map); // Sorted by key
+            return new TreeMap<>(map); // sortirano po kljucevima
         } finally {
             lock.readLock().unlock();
         }

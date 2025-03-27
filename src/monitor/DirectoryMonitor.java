@@ -72,7 +72,7 @@ public class DirectoryMonitor extends Thread {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         System.out.println("Interrupted while adding file to update queue: " + name);
-                        return; // Prekini izvršavanje ako je nit prekinuta
+                        return; // Prekini izvrsvanje ako je nit prekinuta
                     }
                 }
             }

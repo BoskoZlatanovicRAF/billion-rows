@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class MapExporter {
-    private static final Object exportLock = new Object(); // da ne bi bilo konflikta sa periodičnim izveštajem
+    private static final Object exportLock = new Object(); // da ne bi bilo konflikta sa periodicnim izvestajem
 
     public static void exportToCsv(Map<Character, StationData> mapSnapshot, String path) {
         synchronized (exportLock) {
