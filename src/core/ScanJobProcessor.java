@@ -18,11 +18,8 @@ public class ScanJobProcessor {
         }
 
         ReentrantReadWriteLock fileLock = FileUpdateProcessor.getFileLock(file.getAbsolutePath());
-        System.out.println("[SCAN-" + command.getJobName() + "] Acquiring READ lock for file: " + file.getName());
         fileLock.readLock().lock();
         try {
-            System.out.println("[SCAN-" + command.getJobName() + "] READ lock acquired for file: " + file.getName());
-
             boolean isCsv = file.getName().endsWith(".csv");
 
             // Uzmi lock za izlazni fajl na poctku obrade ulaznog fajla
@@ -82,7 +79,6 @@ public class ScanJobProcessor {
             System.out.println("[SCAN-" + command.getJobName() + "] Processing file: " + file.getName() + " completed.");
 
         } finally {
-            System.out.println("[SCAN-" + command.getJobName() + "] Releasing READ lock for file: " + file.getName());
             fileLock.readLock().unlock();
         }
     }

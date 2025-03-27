@@ -58,10 +58,8 @@ public class FileUpdateProcessor extends Thread {
         boolean isCsv = file.getName().endsWith(".csv");
 
         ReentrantReadWriteLock lock = getFileLock(file.getAbsolutePath());
-        System.out.println("[UPDATE] Acquiring WRITE lock for file: " + file.getName());
         lock.writeLock().lock();
         try {
-            System.out.println("[UPDATE] WRITE lock acquired for file: " + file.getName());
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     new FileInputStream(file), StandardCharsets.UTF_8))) {
 
@@ -70,7 +68,6 @@ public class FileUpdateProcessor extends Thread {
 
                 while ((line = reader.readLine()) != null && running) {
                     if (Thread.currentThread().isInterrupted()) {
-                        System.out.println("[UPDATE] Thread interrupted while processing file: " + file.getName());
                         throw new InterruptedException("Processing interrupted");
                     }
 
@@ -94,7 +91,6 @@ public class FileUpdateProcessor extends Thread {
                     mapManager.update(station, temp);
                 }
 
-                System.out.println("[UPDATE] Processing file: " + file.getName() + " completed.");
             } catch (IOException e) {
                 System.out.println("Error reading file " + file.getName() + ": " + e.getMessage());
             }
@@ -102,7 +98,6 @@ public class FileUpdateProcessor extends Thread {
             System.out.println("[UPDATE] Process interrupted for file: " + file.getName());
             Thread.currentThread().interrupt();
         } finally {
-            System.out.println("[UPDATE] Releasing WRITE lock for file: " + file.getName());
             lock.writeLock().unlock();
         }
     }
