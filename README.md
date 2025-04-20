@@ -61,7 +61,7 @@ The system is composed of several interacting components:
 
 
 ## How to run?
-- To run add some txt or csv file with format `Hamburg;12.0` with each station in new line. Here you can try some commands:
+- To run add some txt or csv file with format `Hamburg;12.0` with each station in new line. Here you can try some commands:<br/>
 `SCAN --min 10.0 --max 20.0 --letter H --output output.txt --job job1`<br/>
 `STATUS --job job1`<br/>
 `MAP`<br/>
